@@ -36,8 +36,6 @@ def generate_build_files():
     else:
         cmake_command.append("-DCMAKE_BUILD_TYPE=Release")
 
-    print(args.default_generator)
-    print(cmake_command)
     res = s.run(cmake_command, cwd=target_dir)
     if res.returncode != 0:
         sys.exit(res.returncode)

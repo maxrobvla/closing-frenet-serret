@@ -1,17 +1,26 @@
-#define sample_size (int)100
-#define low_integration_bound (double)0
-#define high_integration_bound (double)1
-#define step_size                                                              \
-    (double)((high_integration_bound - low_integration_bound) /                \
-             (double)sample_size)
+#pragma once
+constexpr int sample_size = 1000;
+constexpr double low_integration_bound = 0.0;
+constexpr double high_integration_bound = 2.0 * 3.141592653589;
+constexpr double step_size = (high_integration_bound - low_integration_bound) /
+                             static_cast<double>(sample_size);
+constexpr int dims = 3;
+
 #include <array>
+#include <functional>
+#include <vector>
 
-// we need half steps for integration
-typedef std::array<double, sample_size> scalar_sample;
-typedef std::array<double, 2 * sample_size> scalar_2x_sample;
-typedef std::array<std::array<double, 3>, sample_size> vector_sample;
-typedef std::array<double, 3> real_vector;
-typedef std::array<std::array<double, 3>, 3> basis;
-typedef std::array<basis, sample_size> basis_sample;
+typedef std::array<double, dims> real_vector;
+typedef std::array<double, dims * dims> basis;
+typedef std::array<double, (dims + 1) * dims> frenet_serret_frame;
 
-scalar_sample sample_function(double (*func)(double));
+// typedef for integrator
+typedef frenet_serret_frame state_type;
+
+void solve_frenet_serret(std::vector<state_type> &solution,
+                         std::vector<double> &arc_lengths,
+                         std::function<double(double)> curvature,
+                         std::function<double(double)> torsion);
+
+std::vector<real_vector> generate_curve(std::function<double(double)> curvature,
+                                        std::function<double(double)> torsion);
