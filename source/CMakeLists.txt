@@ -17,11 +17,11 @@ if(OpenMP_CXX_FOUND)
     link_libraries(OpenMP::OpenMP_CXX)
 endif()
 
-set(CXX_SRC solver.cpp optimization.cpp io_utils.cpp system_class.cpp sqlite.cpp)
+set(CXX_SRC solver.cpp optimization.cpp io_utils.cpp system_class.cpp)
 set(ARGP_SRC argparse.cpp)
 
 # main executable
-add_executable("solver" main.cpp ${CXX_SRC} ${ARGP_SRC})
+# add_executable("solver" main.cpp ${CXX_SRC} ${ARGP_SRC})
 
 # build python module
 set(PYBIND11_FINDPYTHON ON)

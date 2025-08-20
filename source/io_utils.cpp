@@ -14,7 +14,7 @@ void write_solution_to_file(std::string name,
     std::string file_name = name + ".dat";
     std::ofstream out(save_path / file_name);
     out << "l,p1,p2,p3,t1,t2,t3,n1,n2,n3,b1,b2,b3" << std::endl;
-    for (int i = 0; i < (int)arc_lengths.size(); i++) {
+    for (size_t i = 0; i < arc_lengths.size(); i++) {
         out << arc_lengths[i] << ",";
         for (int j = 0; j < (3 * dims) + 2; j++) {
             out << sample[i][j] << ",";

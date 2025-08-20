@@ -1,8 +1,10 @@
 #include "io_utils.hpp"
 #include "optimization.hpp"
+#include "solver.hpp"
 #include "system_class.hpp"
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 namespace py = pybind11;
 
@@ -52,6 +54,31 @@ double python_loss(int number_field_periods, py::array_t<int> order_zeros,
     return curve_closing_loss(sys);
 }
 
+py::array_t<double>
+python_jacobian_of_loss(int number_field_periods, py::array_t<int> order_zeros,
+                        py::array_t<double> curvature_coefficients,
+                        py::array_t<double> torsion_coefficients) {
+    curve_system sys =
+        create_system_from_python(number_field_periods, order_zeros,
+                                  curvature_coefficients, torsion_coefficients);
+
+    std::vector<frenet_serret_frame> curve;
+    std::vector<double> arc_lengths;
+
+    solve_frenet_serret(curve, arc_lengths, sys);
+
+    std::vector<double> jacobian_vec = jacobian_curve_closing_loss(sys);
+
+    auto jacobian = py::array_t<double>(jacobian_vec.size());
+    auto jacobian_buffer = jacobian.request();
+    auto jacobian_ptr = (double *)jacobian_buffer.ptr;
+
+    std::memcpy((double *)jacobian_ptr, jacobian_vec.data(),
+                jacobian_vec.size() * sizeof(double));
+
+    return jacobian;
+}
+
 void save_curve(std::string filename, int number_field_periods,
                 py::array_t<int> order_zeros,
                 py::array_t<double> curvature_coefficients,
@@ -61,6 +88,29 @@ void save_curve(std::string filename, int number_field_periods,
                                   curvature_coefficients, torsion_coefficients);
 
     write_solution_to_file(filename, sys);
+}
+
+std::vector<double>
+python_loss_vector(int number_field_periods, py::array_t<int> order_zeros,
+                   py::array_t<double> curvature_coefficients,
+                   py::array_t<double> torsion_coefficients) {
+    curve_system sys =
+        create_system_from_python(number_field_periods, order_zeros,
+                                  curvature_coefficients, torsion_coefficients);
+
+    return curve_closing_loss_vector(sys);
+}
+
+std::vector<std::vector<double>>
+python_jacobian_of_loss_vector(int number_field_periods,
+                               py::array_t<int> order_zeros,
+                               py::array_t<double> curvature_coefficients,
+                               py::array_t<double> torsion_coefficients) {
+    curve_system sys =
+        create_system_from_python(number_field_periods, order_zeros,
+                                  curvature_coefficients, torsion_coefficients);
+
+    return jacobian_curve_closing_loss_vector(sys);
 }
 
 PYBIND11_MODULE(closing_frenet_serret, m) {
@@ -78,4 +128,15 @@ PYBIND11_MODULE(closing_frenet_serret, m) {
     m.def("curvature_harmonic_part_check_zeros",
           curvature_harmonic_part_check_zeros, py::arg("number_field_periods"),
           py::arg("curvature_coefficients"));
+    m.def("loss_jacobian", python_jacobian_of_loss,
+          py::arg("number_field_periods"), py::arg("order_zeros"),
+          py::arg("curvature_coefficients"), py::arg("torsion_coefficients"));
+    m.def("loss_vector", python_loss_vector,
+          "Returns curve closing loss for curvature and torsion specified by "
+          "given parameters",
+          py::arg("number_field_periods"), py::arg("order_zeros"),
+          py::arg("curvature_coefficients"), py::arg("torsion_coefficients"));
+    m.def("loss_jacobian_vector", python_jacobian_of_loss_vector,
+          py::arg("number_field_periods"), py::arg("order_zeros"),
+          py::arg("curvature_coefficients"), py::arg("torsion_coefficients"));
 }

@@ -1,4 +1,3 @@
-#include "solver.hpp"
 #include "system_class.hpp"
 #include <string>
 #include <vector>
