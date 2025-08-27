@@ -110,9 +110,8 @@ double general_curvature::derivative_wrt_coefficient(double l,
     if (l <= half_period_length) {
         result += derivative_half_period_function(l, coefficient_idx);
     } else if (l > half_period_length) { // mirror function at half period
-                                         // sign difference because of symmetry
-        result += -derivative_half_period_function(half_period_length - l,
-                                                   coefficient_idx);
+        result += derivative_half_period_function(half_period_length - l,
+                                                  coefficient_idx);
     }
     return result;
 }

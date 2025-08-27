@@ -66,9 +66,8 @@ void solve_frenet_serret(std::vector<state_type> &solution,
     // setup integration method
     // ode::make_dense_output(absolute_tolerance, relative_tolerance,
     // integration_method)
-    // TODO: turn back to 1e-9, 1e-9
     auto stepper = ode::make_dense_output(
-        1e-20, 1e-20, ode::runge_kutta_dopri5<state_type>());
+        1e-9, 1e-9, ode::runge_kutta_dopri5<state_type>());
 
     size_t _ = ode::integrate_const(
         stepper, reduced_rhs, starting_frame, low_integration_bound,
@@ -140,7 +139,7 @@ frenet_serret_frame calc_derivative_wrt_parameter(curve_system sys,
     // ode::make_dense_output(absolute_tolerance, relative_tolerance,
     // integration_method)
     auto stepper = ode::make_dense_output(
-        1e-15, 1e-15, ode::runge_kutta_dopri5<state_type>());
+        1e-9, 1e-9, ode::runge_kutta_dopri5<state_type>());
 
     std::vector<state_type> state;
     std::vector<double> time;
@@ -149,9 +148,5 @@ frenet_serret_frame calc_derivative_wrt_parameter(curve_system sys,
                                        low_integration_bound,
                                        high_integration_bound, step_size,
                                        push_back_state_and_time(state, time));
-    // size_t _ = ode::integrate_const(
-    //     ode::runge_kutta_dopri5<state_type>(), reduced_rhs, starting_frame,
-    //     low_integration_bound, high_integration_bound, step_size,
-    //     push_back_state_and_time(state, time));
     return state.back();
 }

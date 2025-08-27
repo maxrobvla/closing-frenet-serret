@@ -113,6 +113,56 @@ python_jacobian_of_loss_vector(int number_field_periods,
     return jacobian_curve_closing_loss_vector(sys);
 }
 
+py::tuple
+python_jacobian_and_scalar_loss(int number_field_periods,
+                                py::array_t<int> order_zeros,
+                                py::array_t<double> curvature_coefficients,
+                                py::array_t<double> torsion_coefficients) {
+
+    curve_system sys =
+        create_system_from_python(number_field_periods, order_zeros,
+                                  curvature_coefficients, torsion_coefficients);
+    sys.check_curve();
+    double loss = curve_closing_loss(sys);
+    std::vector<double> jacobian = jacobian_curve_closing_loss(sys);
+    return py::make_tuple(loss, jacobian);
+}
+
+py::tuple
+python_jacobian_and_vector_loss(int number_field_periods,
+                                py::array_t<int> order_zeros,
+                                py::array_t<double> curvature_coefficients,
+                                py::array_t<double> torsion_coefficients) {
+
+    curve_system sys =
+        create_system_from_python(number_field_periods, order_zeros,
+                                  curvature_coefficients, torsion_coefficients);
+    sys.check_curve();
+    std::vector<double> loss = curve_closing_loss_vector(sys);
+    std::vector<std::vector<double>> jacobian =
+        jacobian_curve_closing_loss_vector(sys);
+    return py::make_tuple(loss, jacobian);
+}
+
+py::tuple python_get_curve(int number_field_periods,
+                           py::array_t<int> order_zeros,
+                           py::array_t<double> curvature_coefficients,
+                           py::array_t<double> torsion_coefficients) {
+    curve_system sys =
+        create_system_from_python(number_field_periods, order_zeros,
+                                  curvature_coefficients, torsion_coefficients);
+    sys.check_curve();
+    py::array_t<double> curve_x(sys.curve.size());
+    py::array_t<double> curve_y(sys.curve.size());
+    py::array_t<double> curve_z(sys.curve.size());
+    for (size_t i = 0; i < sys.curve.size(); i++) {
+        curve_x.mutable_at(i) = sys.curve[i][0];
+        curve_y.mutable_at(i) = sys.curve[i][1];
+        curve_z.mutable_at(i) = sys.curve[i][2];
+    }
+    return py::make_tuple(curve_x, curve_y, curve_z);
+}
+
 PYBIND11_MODULE(closing_frenet_serret, m) {
     m.def("loss", python_loss,
           "Returns curve closing loss for curvature and torsion specified by "
@@ -139,4 +189,10 @@ PYBIND11_MODULE(closing_frenet_serret, m) {
     m.def("loss_jacobian_vector", python_jacobian_of_loss_vector,
           py::arg("number_field_periods"), py::arg("order_zeros"),
           py::arg("curvature_coefficients"), py::arg("torsion_coefficients"));
+    m.def("jacobian_and_scalar_loss", python_jacobian_and_scalar_loss,
+          py::arg("number_field_periods"), py::arg("order_zeros"),
+          py::arg("curvature_coefficients"), py::arg("torsion_coefficients"));
+    m.def("get_curve", python_get_curve, py::arg("number_field_periods"),
+          py::arg("order_zeros"), py::arg("curvature_coefficients"),
+          py::arg("torsion_coefficients"));
 }

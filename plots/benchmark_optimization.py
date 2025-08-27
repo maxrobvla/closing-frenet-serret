@@ -1,13 +1,17 @@
 import os
 import pickle
 import signal
+import sys
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from cfs_helpers import close_curve, close_curve_alt
 
 path_root = os.path.dirname(__file__)
+
+sys.path.append(os.path.join(path_root, ".."))
+
+from cfs_helpers import close_curve, close_curve_with_jac
 
 total_number_params = 4
 break_point = 2
@@ -67,7 +71,7 @@ for sample in samples:
     result = None
     t = None
     try:
-        result = close_curve_alt(sample, add_args, save=False).fun
+        result = close_curve_with_jac(sample, add_args, save=False).fun
         t = time.time() - start
     except TimeoutError:
         fail_counter_alt += 1
@@ -102,5 +106,5 @@ ax.set_ylabel(r"achieved value of loss")
 ax.set_xlim(-0.1, 5)
 ax.legend()
 ax.set_yscale("log")
-fig.savefig("test_optimizer.png")
+fig.savefig(os.path.join(path_root, "test_optimizer.png"))
 plt.show()
