@@ -24,5 +24,7 @@ void solve_frenet_serret(std::vector<state_type> &solution,
 void solve_frenet_serret(std::vector<state_type> &solution,
                          std::vector<double> &arc_lengths, curve_system sys);
 
+#ifdef ENABLE_GRADIENT_CALCULATION
 frenet_serret_frame calc_derivative_wrt_parameter(curve_system sys,
                                                   size_t parameter_idx);
+#endif

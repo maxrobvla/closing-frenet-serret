@@ -75,6 +75,7 @@ void solve_frenet_serret(std::vector<state_type> &solution,
         push_back_state_and_time(solution, arc_lengths));
 }
 
+#ifdef ENABLE_GRADIENT_CALCULATION
 void jacobian_frenet_serret_rhs(const state_type &frame_derivative,
                                 state_type &derivative, double l,
                                 curve_system sys, size_t parameter_idx) {
@@ -123,7 +124,7 @@ void jacobian_frenet_serret_rhs(const state_type &frame_derivative,
 frenet_serret_frame calc_derivative_wrt_parameter(curve_system sys,
                                                   size_t parameter_idx) {
 
-    sys.check_curve();
+    sys.check_curve(true);
 
     state_type starting_frame;
     // 3dim. vectors: position, tangent, normal, binormal
@@ -150,3 +151,4 @@ frenet_serret_frame calc_derivative_wrt_parameter(curve_system sys,
                                        push_back_state_and_time(state, time));
     return state.back();
 }
+#endif

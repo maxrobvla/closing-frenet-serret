@@ -4,7 +4,7 @@ project(IPP-Frenet-Serret)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-# Enable warnings
+# enable warnings
 if (MSVC)
     add_compile_options(/W4)
 else()
@@ -19,6 +19,16 @@ endif()
 
 set(CXX_SRC solver.cpp optimization.cpp io_utils.cpp system_class.cpp)
 set(ARGP_SRC argparse.cpp)
+
+# enable macro definition
+option(ENABLE_GRADIENT_CALCULATION "enable gradient calculation" OFF)
+
+if(ENABLE_GRADIENT_CALCULATION)
+    message("Note: Enabling gradient calculation")
+    add_compile_definitions(ENABLE_GRADIENT_CALCULATION)
+else()
+    message("Note: Disabling gradient calculation")
+endif()
 
 # main executable
 # add_executable("solver" main.cpp ${CXX_SRC} ${ARGP_SRC})

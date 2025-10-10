@@ -18,6 +18,11 @@ parser.add_argument(
     action="store_true",
     help="use OS default generator instead of ninja",
 )
+parser.add_argument(
+    "--enable-gradient-calculation",
+    action="store_true",
+    help="enable the calculation of gradient information (could slow C++ part of optimization down)",
+)
 
 args = parser.parse_args()
 
@@ -28,9 +33,18 @@ def generate_build_files():
     cmake_command = ["cmake", "-B", "build", "-S", "source"]
 
     if not args.default_generator:
-        cmake_command.append("-G")
-        cmake_command.append("Ninja")
+        # check if ninja is installed
+        if shutil.which("ninja") is None:
+            print("Warning: Could not find ninja in PATH, using default generator instead")
+            args.default_generator = True
+            generate_build_files()
+            return
+        else:
+            cmake_command.append("-G")
+            cmake_command.append("Ninja")
 
+    if args.enable_gradient_calculation:
+        cmake_command.append("-DENABLE_GRADIENT_CALCULATION=ON")
     if args.debug:
         cmake_command.append("-DCMAKE_BUILD_TYPE=Debug")
     else:

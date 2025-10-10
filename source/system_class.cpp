@@ -17,6 +17,7 @@ double harmonic_series_pure_cos::operator()(double l) {
     return result;
 }
 
+#ifdef ENABLE_GRADIENT_CALCULATION
 double
 harmonic_series_pure_cos::derivative_wrt_coefficient(double l,
                                                      size_t coefficient_idx) {
@@ -27,6 +28,7 @@ harmonic_series_pure_cos::derivative_wrt_coefficient(double l,
                         l);
     }
 }
+#endif
 
 bool check_harmonic_series_for_zeros(harmonic_series_pure_cos series) {
     double half_period_length =
@@ -43,16 +45,16 @@ bool check_harmonic_series_for_zeros(harmonic_series_pure_cos series) {
     // check the sign of every component
     // idea: if the sign changes throughout the half field period, there are
     // zeros inside the half field period
-    bool has_zeros = true;
+    bool no_inner_zeros = true;
     bool positive = (grid_values[0] > 0);
     for (size_t i = 1; i < sample_size; i++) {
         if ((positive and (grid_values[i] < 0)) or
             ((not positive) and (grid_values[i] > 0))) {
-            has_zeros = false;
+            no_inner_zeros = false;
             break;
         }
     }
-    return has_zeros;
+    return no_inner_zeros;
 }
 
 bool check_harmonic_series_for_zeros(
@@ -85,6 +87,8 @@ double general_curvature::zeros_func(double l) {
 double general_curvature::half_period_function(double l) {
     return harmonic_part(l) * zeros_func(l);
 }
+
+#ifdef ENABLE_GRADIENT_CALCULATION
 double
 general_curvature::derivative_half_period_function(double l,
                                                    size_t coefficient_idx) {
@@ -115,11 +119,16 @@ double general_curvature::derivative_wrt_coefficient(double l,
     }
     return result;
 }
+#endif
 
+// BUG: flipping of curvatures does not fix the problem of root finding
 double general_curvature::operator()(double l) {
     double result = 0.0;
     const double half_period_length =
         std::numbers::pi / double(number_field_periods);
+
+    // get period number before mapping into first period
+    int period_number = std::floor(l / (2.0f * half_period_length));
 
     // map l into period
     while (l < 0) {
@@ -134,6 +143,14 @@ double general_curvature::operator()(double l) {
         result += half_period_function(l);
     } else if (l > half_period_length) { // mirror function at half period
         result += half_period_function(half_period_length - l);
+    }
+
+    // BUG: flipping of curvatures does not fix the problem
+    // flip curvature if it is in even period and with odd boundary zeros
+    if (order_zeros_field_maxima % 2 == 1) {
+        if (period_number % 2 == 0) {
+            result *= -1.0f;
+        }
     }
     return result;
 };
@@ -151,9 +168,10 @@ curve_system::curve_system(int input_field_periods,
     total_number_parameters = curvature_params.size() + torsion_params.size();
 };
 
+#ifdef ENABLE_GRADIENT_CALCULATION
 frenet_serret_frame curve_system::interpolate(double l) {
     {
-        check_curve();
+        check_curve(true, false);
         frenet_serret_frame result;
         for (int i = 0; i < dims * (dims + 1); i++) {
             result[i] = interpolators[i](l);
@@ -161,39 +179,47 @@ frenet_serret_frame curve_system::interpolate(double l) {
         return result;
     }
 }
+#endif
 
 // set the actual curve and prepare interpolators
-void curve_system::set_curve() {
+void curve_system::set_curve([[maybe_unused]] bool prepare_derivative) {
     std::vector<frenet_serret_frame> fs_solution;
     std::vector<double> arc_lengths;
     solve_frenet_serret(fs_solution, arc_lengths, curvature, torsion);
     curve = std::move(fs_solution);
 
-    std::vector<frenet_serret_frame> fs_derivatives(arc_lengths.size());
-    for (size_t i = 0; i < arc_lengths.size(); i++) {
-        frenet_serret_rhs(curve[i], fs_derivatives[i], arc_lengths[i],
-                          curvature, torsion);
-    }
-
-    for (int d = 0; d < dims * (dims + 1); d++) {
-        std::vector<std::array<double, 2>> coordinate_deriv_pair(
-            arc_lengths.size());
+#ifdef ENABLE_GRADIENT_CALCULATION
+    if (prepare_derivative) {
+        std::vector<frenet_serret_frame> fs_derivatives(arc_lengths.size());
         for (size_t i = 0; i < arc_lengths.size(); i++) {
-            coordinate_deriv_pair[i] = {curve[i][d], fs_derivatives[i][d]};
+            frenet_serret_rhs(curve[i], fs_derivatives[i], arc_lengths[i],
+                              curvature, torsion);
         }
-        interpolators.emplace_back(std::move(coordinate_deriv_pair),
-                                   low_integration_bound, step_size);
+
+        for (int d = 0; d < dims * (dims + 1); d++) {
+            std::vector<std::array<double, 2>> coordinate_deriv_pair(
+                arc_lengths.size());
+            for (size_t i = 0; i < arc_lengths.size(); i++) {
+                coordinate_deriv_pair[i] = {curve[i][d], fs_derivatives[i][d]};
+            }
+            interpolators.emplace_back(std::move(coordinate_deriv_pair),
+                                       low_integration_bound, step_size);
+        }
     }
+#endif
 }
 
-void curve_system::check_curve(bool verbose) {
-    if ((curve.size() != sample_size + 1) or
-        (interpolators.size() != dims * (dims + 1))) {
+void curve_system::check_curve(bool prepare_derivative, bool verbose) {
+    if ((curve.size() != sample_size + 1)
+#ifdef ENABLE_GRADIENT_CALCULATION
+        or (interpolators.size() != dims * (dims + 1))
+#endif
+    ) {
         if (verbose) {
             std::cout << "The curve system has not been set up correctly yet."
                       << std::endl;
         }
-        set_curve();
+        set_curve(prepare_derivative);
     } else if (verbose) {
         std::cout << "The curve system has been set up correctly." << std::endl;
     }
